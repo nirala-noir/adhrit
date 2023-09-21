@@ -1,0 +1,17 @@
+{
+  "name": "formtomongo",
+  "version": "1.0.0",
+  "description": "test for store data in mongo and fetch",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "node",
+    "mongodb",
+    "mongoose",
+    "demo"
+  ],
+  "author": "nirala",
+  "license": "ISC"
+}

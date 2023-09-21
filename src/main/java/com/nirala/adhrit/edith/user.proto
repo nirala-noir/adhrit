@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+option java_package = "com/jarvis/edith/helloUser";
+option java_outer_classname = "HelloWorldProto";
+option objc_class_prefix = "HLW";
+
+package hellouser;
+
+service account{
+  rpc login(AccountLoginRequest)  returns (AccountLoginResponse);
+  rpc logOut(Empty)  returns (AccountLoginResponse);
+
+}
+message AccountLoginRequest{
+  string userName=1;
+  string password=2;
+}
+message AccountLoginResponse{
+  string success=1;
+  string apiName=2;
+}
+message Empty{}
+
+//    spring.data.mongodb.uri=mongodb://10.0.6.198:27018/clutchTestDatabase
+//    spring.data.mongodb.database=clutchTestDatabase
+//    spring.data.mongodb.auto-index-creation=true

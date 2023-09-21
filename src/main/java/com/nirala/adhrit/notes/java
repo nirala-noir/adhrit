@@ -1,0 +1,39 @@
+/*
+ * Requires the MongoDB Java Driver.
+ * https://mongodb.github.io/mongo-java-driver
+ */
+
+MongoClient mongoClient = new MongoClient(
+    new MongoClientURI(
+        "mongodb+srv://raman_nirala:xjIjKZVYwtUiVkJA@cluster0.vu7ww3s.mongodb.net/test?tls=true"
+    )
+);
+MongoDatabase database = mongoClient.getDatabase("sample_analytics");
+MongoCollection<Document> collection = database.getCollection("transactions");
+
+FindIterable<Document> result = collection.aggregate(Arrays.asList(new Document("$match",new Document("transaction_count", 81L))));
+
+
+
+Group by Day of the Year
+The following pipeline calculates the total sales amount, average sales quantity, and sale count for each day in the year 2014:
+
+db.sales.aggregate([
+  // First Stage
+  {
+    $match : { "date": { $gte: new ISODate("2014-01-01"), $lt: new ISODate("2015-01-01") } }
+  },
+  // Second Stage
+  {
+    $group : {
+       _id : { $dateToString: { format: "%Y-%m-%d", date: "$date" } },
+       totalSaleAmount: { $sum: { $multiply: [ "$price", "$quantity" ] } },
+       averageQuantity: { $avg: "$quantity" },
+       count: { $sum: 1 }
+    }
+  },
+  // Third Stage
+  {
+    $sort : { totalSaleAmount: -1 }
+  }
+ ])

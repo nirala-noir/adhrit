@@ -1,0 +1,75 @@
+//from clutch ,, work related to data move from mis to new collection
+
+    public void misCollectionRefactorToQuarterlyCollection(){
+        MongoDatabase db = mongoTemplate.getDb();
+        MongoIterable<String> collectionNames = db.listCollectionNames();
+        Calendar calendar = Calendar.getInstance();
+        String reqReceivedTime ="reqReceivedTime";
+        for(String collectionName: collectionNames){
+            if(collectionName.indexOf("wmspullt_limited_")==0 && mongoTemplate.getCollection(collectionName).estimatedDocumentCount()>0){
+                AggregateIterable<Document> aggregateYear = mongoTemplate.getCollection(collectionName).aggregate(Arrays.asList(new Document("$sort",
+                                new Document(reqReceivedTime, 1L)),
+                        new Document("$limit", 1L),
+                        new Document("$project",
+                                new Document(reqReceivedTime, 1L).append("_id", 0L))));
+                Date date = (Date) aggregateYear.first().get(reqReceivedTime);
+                calendar.setTime(date);
+                Integer minYear = calendar.get(Calendar.YEAR);
+                Date startDate,endDate;
+                while (minYear<2022){
+                    //quarter
+                    calendar.set(minYear, 0, 1, 0, 0, 0);
+                    startDate = calendar.getTime();
+                    calendar.set(minYear, 11, 31, 23, 59, 59);
+                    endDate = calendar.getTime();
+                    AggregateIterable<Document> dateForQuarter = mongoTemplate.getCollection(collectionName)
+                            .aggregate(Arrays.asList(new Document("$match",
+                                            new Document(reqReceivedTime,
+                                                    new Document("$gte", startDate)
+                                                            .append("$lte", endDate))),
+                                    new Document("$sort",
+                                            new Document(reqReceivedTime, 1L)),
+                                    new Document("$limit", 1L),
+                                    new Document("$project",
+                                            new Document(reqReceivedTime, 1L).append("_id", 0L))));
+                    Date minDateInYear = (Date) dateForQuarter.first().get(reqReceivedTime);
+                    calendar.setTime(minDateInYear);
+                    int quarterToStart = calendar.get(Calendar.MONTH);
+
+                    for(int i=quarterToStart;i<4;i++) {
+
+                        calendar.set(minYear, i*3, 1, 0, 0, 0);
+                        startDate = calendar.getTime();
+                        calendar.set(minYear, (i*3)+2, (i%2==0)?31:30, 23, 59, 59);
+                        endDate = calendar.getTime();
+                        //what to do with the current year
+                        Date currentDate = new Date();
+                        if(endDate == currentDate){
+
+                        }
+                        AggregateIterable<Document> matchValue = mongoTemplate.getCollection(collectionName)
+                                .aggregate(Arrays.asList(new Document("$match",
+                                        new Document(reqReceivedTime,
+                                                new Document("$gte", startDate)
+                                                        .append("$lte", endDate)))));
+                        if (matchValue.first() != null) {
+                            String quarterOneCollection = "wa_" + "enterpId_" + (i+1) + "_" + minYear;
+                            mongoTemplate.getCollection(collectionName)
+                                    .aggregate(Arrays.asList(new Document("$match",
+                                                    new Document(reqReceivedTime,
+                                                            new Document("$gte", startDate)
+                                                                    .append("$lte", endDate))),
+                                            new Document("$merge",
+                                                    new Document("into", quarterOneCollection)))).first();
+                        }
+                    }
+                    minYear++;
+                }
+            }
+        }
+    }
+//case: from min date of a collection we can iterate in same year by taking for loop(min date's month -> quarter)
+//now inside this while loop while(2003<2022){
+//we don't know the min month , so we have to find the min date of 2003 to get the starting quarter=>1 and then we will iterate to the next quarter
+// and got the empty aggregation result for the 3rd quarter , then we have to skip that collection creation.
+//
